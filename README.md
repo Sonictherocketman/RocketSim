@@ -10,3 +10,4 @@ Nothing is optional.
 ## Info
 This simulation calculates the thrust profile, and apogee height of a water/compressed air rocket given by the configuration given. 
 
+As of yet, the rocket does not support fins and does not provide the magnitudes of aerodynamic forces that act during flight.
