@@ -47,7 +47,6 @@ class Solver:
         for line in dragstr.splitlines():
             point = line.split(',')[0], line.split(',')[1], line.split(',')[2]
             drag.append(point)
-        dragfile.close()
         return drag
 
     @staticmethod
@@ -84,19 +83,23 @@ class Solver:
         self.rocket.tankThickness = self.tankThickness
         # Start Calculations
         self.rocket.calcLength()
+        self.getStresses()
         self.rocket.launch()
         # Output
         points = self.rocket.getAllPoints()
+        print "\nDry Mass: {0}(kg) or {1}(lb)".format(self.structuralMass + self.payloadMass, (self.structuralMass +
+                                                                                               self.payloadMass) /
+                                                                                               self.__lb_kg)
         print "\nApogee Height: {0}(m)".format(str(self.getMaxHeight()))
         print "\nTank Stats:\nVolume: {0}(L) Length: {1}(m) Area: {2}(m^2) Radius: {3}(cm)".format(
             str(self.rocket.volume * 1000),
             str(self.rocket.length),
             str(self.rocket.frontalArea),
             str(math.sqrt(
-                self.rocket.frontalArea) /
-                3.14 * 100))
-        print "Hoop Stress: {0}(MPa) Longitudinal Stress: {1}(MPa)".format(str(self.rocket.hoopStress[0] / 1000000),
-                                                                           str(self.rocket.longStress[0] / 1000000))
+                self.rocket.frontalArea /
+                3.14) * 100))
+        print "Hoop Stress: {0}(MPa) Longitudinal Stress: {1}(MPa)".format(str(self.rocket.hoopStressCurrent / 1000000),
+                                                                           str(self.rocket.longStressCurrent / 1000000))
         self.writeOut(points)
 
     def getMaxHeight(self):
@@ -104,7 +107,13 @@ class Solver:
         if len(points) > 0:
             maxPoint = points[-1]
             return maxPoint.y
-    
-    def clear(self):
-    	self.rocket.clear()
-    	
+
+    def getStresses(self):
+        """ Calculates the stresses and forces on the rocket body. Accounts for both internal pressure loads and
+        external drag forces. """
+        # self.flightStats: {Time, Thrust, MassFlow, Current Mass, Current Air Volume, Current Water Volume, Total
+                            # Air Volume, Total Water Volume, Current Air Mass, Current Water Mass}
+        # Get the current tank status.
+        self.rocket.hoopStressCurrent = self.airPressure * self.tankRadius / self.tankThickness
+        self.rocket.longStressCurrent = self.airPressure * self.tankRadius / (2 * self.tankThickness)
+        return 0

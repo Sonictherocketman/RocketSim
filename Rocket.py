@@ -51,39 +51,6 @@ class Rocket:
     def __init__(self):
         """ Default Constructor """
         self.ready = True
-        # Bookkeeping
-        self.__points = []
-        self.__previousPoint = Point.Point(0, 0, 0, 0, 0, "Launch Point")
-        self.__apogeePoint = Point.Point(0, 0, 0, 0, 0, "")
-        self.__burnoutPoint = Point.Point(0, 0, 0, 0, 0, "")
-        self.__impactPoint = Point.Point(0, 0, 0, 0, 0, "")
-        self.__flightTime = 0  # seconds
-        self.__dt = 0.01  # seconds
-        # Data
-        self.drag = []
-        self.thrust = []
-        self.flightStats = []
-        # Status
-        self.hasReachedApogee = False
-        self.hasLaunched = False
-        self.isPowered = True
-        self.isCruising = False
-        # Structure and Configuration
-        self.payloadMass = 0.0  # kg
-        self.structuralMass = 0.0  # kg
-        self.propellantMass = 0.0  # kg
-        self.burnTime = 0.0  # s
-        self.currentMass = 0.0  # kg
-        self.frontalArea = 0.1  # m^2
-        self.length = 0.0  # m
-        # Tank Stats
-        self.volume = 0.0  # m^3
-        self.hoopStressCurrent = 0.0
-        self.longStressCurrent = 0.0
-        self.hoopStress = []
-        self.longStress = []
-        self.tankThickness = 0.0
-        self.tankRadius = 0.0
 
     def __dragForMach(self, mach, powered):
         """ Determines the drag value for the given mach number. The mach number is accurate to 5%
@@ -104,7 +71,7 @@ class Rocket:
                     return float(drag[2])
                 if not powered:
                     return float(drag[1])
-        return -1
+        return 0
 
     def __thrust(self, time):
         """ Returns the thrust value for the given time value. """
@@ -150,7 +117,6 @@ class Rocket:
         while not self.hasReachedApogee:
             self.__flightTime += self.__dt
             self.__points.append(self.getNextPoint())
-            self.getStresses(self.__flightTime)
 
     def getAllPoints(self):
         return self.__points
@@ -170,8 +136,10 @@ class Rocket:
         mach = prevPoint.velocity / self.__speedOfSound
 
         self.currentMass = self.__fuelMass(self.__flightTime) + self.structuralMass + self.payloadMass
-        drag = self.__dragForMach(mach, self.isPowered) * 0.5 * rho * self.frontalArea * (
-            prevPoint.velocity ** 2) - 9.81
+        dragCoeff = self.__dragForMach(mach, self.isPowered)
+        aerodrag = dragCoeff * 0.5 * rho * self.frontalArea * (
+            prevPoint.velocity ** 2)
+        drag = aerodrag + 9.81
         if self.isPowered:
             # Powered Climb
             thrust = self.__thrust(self.__flightTime)
@@ -183,7 +151,7 @@ class Rocket:
         else:
             # Cruising Upward
             thrust = 0.0
-            acceleration = drag / self.currentMass
+            acceleration = (thrust - drag) / self.currentMass
             vel = prevPoint.velocity + 0.5 * self.__dt * (prevPoint.acceleration + acceleration)
             y = vel * self.__dt + prevPoint.y  # We can do this since there is no horizontal motion.
             x = 0
@@ -192,7 +160,7 @@ class Rocket:
         point.y = y
         point.velocity = vel
         point.acceleration = acceleration
-        point.drag = drag
+        point.drag = aerodrag
         point.thrust = thrust
         point.time = self.__flightTime
         point.mass = self.currentMass
@@ -216,32 +184,3 @@ class Rocket:
         self.length = length
         self.volume = vol_total
         return length
-
-    def getStresses(self, time):
-        """ Calculates the stresses and forces on the rocket body. Accounts for both internal pressure loads and
-        external drag forces. """
-        # self.flightStats: {Time, Thrust, MassFlow, Current Mass, Current Air Volume, Current Water Volume, Total
-                            # Air Volume, Total Water Volume, Current Air Mass, Current Water Mass}
-        # Get the current tank status.
-        for moment in self.flightStats:
-            if time == moment[0]:  # Find the correct time in the list of mass profile info.
-                currentCondition = moment
-                pressure = (currentCondition[8] / currentCondition[5]) * (293 * 287)
-                self.hoopStressCurrent = pressure * self.tankRadius / self.tankThickness
-                self.longStressCurrent = pressure * self.tankRadius / (2 * self.tankThickness)
-                self.hoopStress.append(self.hoopStressCurrent)
-                self.longStress.append(self.longStressCurrent)
-                return 0
-        return 0
-        
-    def getForces(self):
-    	""" Calculates the aerodynamic forces on the body of the rocket at takeoff. """
-    	
-        
-    def clear(self):
-        self.points = []
-        self.drag = []
-        self.thrust = []
-        self.flightStats = []
-        self.hoopStress = []
-        self.longStress = []

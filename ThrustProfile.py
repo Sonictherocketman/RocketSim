@@ -105,6 +105,7 @@ class ThrustProfile:
         print "Mass Air/Water Percents: " + str(abs(
             self.m_air_total) / (self.m_air_total + self.m_water_total) * 100) + " " + str(
             abs(self.m_water_total) / (self.m_air_total + self.m_water_total) * 100)
+        print "Total Air/Water Volumes: " + str(self.vol_air_total) + "m^3, " + str(self.vol_water_total) + "m^3"
 
     # Calculate a mass flow.
     def massflow(self):
@@ -140,7 +141,7 @@ class ThrustProfile:
         # Via Bernoulli's
         # Assuming no loss of water inside the tank.
         rho_air = self.p_air_current / (287 * 293)
-        self.u_e = math.sqrt(2 * abs(self.p_air_current - self.p_atmosphere) / rho_air) * 0.98
+        self.u_e = math.sqrt(2 * abs(self.p_air_current - self.p_atmosphere) / rho_air)
         area = 3.14 * pow((self.d_noz / 2), 2)  # Get Nozzle area
         self.m_dot_air = rho_air * self.u_e * area  # Get new mass flow.
         self.m_dot_list.append(self.m_dot_air)
