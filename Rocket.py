@@ -139,7 +139,7 @@ class Rocket:
         dragCoeff = self.__dragForMach(mach, self.isPowered)
         aerodrag = dragCoeff * 0.5 * rho * self.frontalArea * (
             prevPoint.velocity ** 2)
-        drag = aerodrag + 9.81
+        drag = aerodrag + 9.81 * self.currentMass
         if self.isPowered:
             # Powered Climb
             thrust = self.__thrust(self.__flightTime)
